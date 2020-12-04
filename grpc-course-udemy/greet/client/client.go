@@ -1,16 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"context"
 
+	greetpb "github.com/ByBravo/grpc/grpc-course-udey/greet/greetpb"
+	"github.com/ByBravo/grpc/grpc-course-udey/greet/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
 
+var loggerf = log.LoggerJSON().WithField("package", "client")
+
 func main() {
 
-	fmt.Println("Hello I'm a client")
+	log := loggerf.WithField("func", "main")
+	log.Info("Hello im a client")
 
 	tls := false
 	opts := grpc.WithInsecure()
@@ -18,7 +22,7 @@ func main() {
 		certFile := "ssl/ca.crt" // Certificate Authority Trust certificate
 		creds, sslErr := credentials.NewClientTLSFromFile(certFile, "")
 		if sslErr != nil {
-			log.Fatalf("Error while loading CA trust certificate: %v", sslErr)
+			log.Error("Error while loading CA trust certificate: " + sslErr.Error())
 			return
 		}
 		opts = grpc.WithTransportCredentials(creds)
@@ -26,7 +30,7 @@ func main() {
 
 	cc, err := grpc.Dial("localhost:50051", opts)
 	if err != nil {
-		log.Fatalf("could not connect: %v", err)
+		log.Error("could not connect: " + err.Error())
 	}
 	defer cc.Close()
 
@@ -40,4 +44,23 @@ func main() {
 
 	// doUnaryWithDeadline(c, 5*time.Second) // should complete
 	// doUnaryWithDeadline(c, 1*time.Second) // should timeout
+}
+
+func doUnary(c greetpb.GreetServiceClient) {
+	log := loggerf.WithField("func", "doUnary")
+	log.Info("Starting rpc call")
+	req := &greetpb.GreetRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Byron",
+			LastName:  "Bravo",
+		},
+	}
+
+	res, err := c.Greet(context.Background(), req)
+	if err != nil {
+		log.Error("error whilecalling Greet RPC: " + err.Error())
+	}
+
+	log.Info("Response from Greet " + res.Result)
+
 }

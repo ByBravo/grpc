@@ -4,22 +4,28 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+
+	//"log"
 	"net"
 	"strconv"
 	"time"
 
 	greetpb "github.com/ByBravo/grpc/grpc-course-udey/greet/greetpb"
-
+	"github.com/ByBravo/grpc/grpc-course-udey/greet/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
+var loggerf = log.LoggerJSON().WithField("package", "server")
+
 type server struct{}
 
 func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
+
+	log := loggerf.WithField("func", "Greet")
+	log.Info("Iniciando")
 	firstName := req.GetGreeting().GetFirstName()
 
 	result := "Hello " + firstName
@@ -32,7 +38,12 @@ func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.G
 }
 
 func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb.GreetService_GreetManyTimesServer) error {
-	fmt.Printf("GreetManyTimes function was invoked with %v\n", req)
+	log := loggerf.WithField("func", "GreetManyTimes")
+	log.Info("Starting")
+	//
+	stringRequest := fmt.Sprintf("%#v", req)
+	log.Debug("Function was invoked with : " + stringRequest)
+
 	firstName := req.GetGreeting().GetFirstName()
 	for i := 0; i < 10; i++ {
 		result := "Hello " + firstName + " number " + strconv.Itoa(i)
@@ -46,6 +57,9 @@ func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb
 }
 
 func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
+	log := loggerf.WithField("func", "GreetManyTimes")
+	log.Info("Starting")
+
 	fmt.Printf("LongGreet function was invoked with a streaming request\n")
 	result := ""
 	for {
@@ -66,6 +80,9 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 }
 
 func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
+
+	log := loggerf.WithField("func", "GreetManyTimes")
+	log.Info("Starting")
 	fmt.Printf("GreetEveryone function was invoked with a streaming request\n")
 
 	for {
@@ -92,6 +109,8 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 }
 
 func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+	log := loggerf.WithField("func", "GreetManyTimes")
+	log.Info("Starting")
 	fmt.Printf("GreetWithDeadline function was invoked with %v\n", req)
 	for i := 0; i < 3; i++ {
 		if ctx.Err() == context.DeadlineExceeded {
@@ -110,11 +129,13 @@ func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDead
 }
 
 func main() {
-	fmt.Println("Hello world")
+	log := loggerf.WithField("func", "main")
+	log.Info("Starting")
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		log.Error("Failed to listen: " + err.Error())
+		return
 	}
 
 	opts := []grpc.ServerOption{}
@@ -124,7 +145,7 @@ func main() {
 		keyFile := "ssl/server.pem"
 		creds, sslErr := credentials.NewServerTLSFromFile(certFile, keyFile)
 		if sslErr != nil {
-			log.Fatalf("Failed loading certificates: %v", sslErr)
+			log.Error("Failed loading certificates : " + sslErr.Error())
 			return
 		}
 		opts = append(opts, grpc.Creds(creds))
@@ -134,6 +155,6 @@ func main() {
 	greetpb.RegisterGreetServiceServer(s, &server{})
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Error("Failed to serve: " + err.Error())
 	}
 }

@@ -12,6 +12,8 @@ func init() {
 
 }
 
+// Here you can configure different levels of logs and also output formats for the logs
+//(example: plain text, json, etc ...)
 // Logger ...
 func Logger(file string) *apexLog.Entry {
 
