@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 
 	greetpb "github.com/ByBravo/grpc/grpc-course-udey/greet/greetpb"
 	"github.com/ByBravo/grpc/grpc-course-udey/greet/log"
@@ -38,7 +39,7 @@ func main() {
 	// fmt.Printf("Created client: %f", c)
 
 	doUnary(c)
-	// doServerStreaming(c)
+	doServerStreaming(c)
 	// doClientStreaming(c)
 	// doBiDiStreaming(c)
 
@@ -62,5 +63,38 @@ func doUnary(c greetpb.GreetServiceClient) {
 	}
 
 	log.Info("Response from Greet " + res.Result)
+
+}
+
+func doServerStreaming(c greetpb.GreetServiceClient) {
+	log := loggerf.WithField("func", "doServerStreaming")
+	log.Info("Starting rpc call")
+	req := &greetpb.GreetManyTimesRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Byron",
+			LastName:  "Bravo",
+		},
+	}
+
+	resStream, err := c.GreetManyTimes(context.Background(), req)
+	if err != nil {
+		log.Error("error whilecalling Greet RPC: " + err.Error())
+	}
+
+	for {
+		msg, err := resStream.Recv()
+		if err == io.EOF {
+			log.Error("error whilecalling GreetMenyTimes : " + err.Error())
+
+			break
+		}
+
+		if err != nil {
+			log.Error("error whilecalling GreetMenyTimes RPC: " + err.Error())
+		}
+
+		log.Info("Response from GreetMenyTimes " + msg.GetResult())
+
+	}
 
 }

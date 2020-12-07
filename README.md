@@ -6,7 +6,7 @@
     
     Types :
 
-    * Unary (unario)
+    * Unary
 
     * Server Streaming
 
