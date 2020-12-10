@@ -59,7 +59,7 @@ func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb
 }
 
 func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
-	log := loggerf.WithField("func", "GreetManyTimes")
+	log := loggerf.WithField("func", "LongGreet")
 	log.Info("Starting")
 
 	fmt.Printf("LongGreet function was invoked with a streaming request\n")
@@ -83,7 +83,7 @@ func (*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error {
 
 func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) error {
 
-	log := loggerf.WithField("func", "GreetManyTimes")
+	log := loggerf.WithField("func", "GreetEveryone")
 	log.Info("Starting")
 	fmt.Printf("GreetEveryone function was invoked with a streaming request\n")
 
@@ -111,7 +111,7 @@ func (*server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) er
 }
 
 func (*server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
-	log := loggerf.WithField("func", "GreetManyTimes")
+	log := loggerf.WithField("func", "GreetWithDeadline")
 	log.Info("Starting")
 	fmt.Printf("GreetWithDeadline function was invoked with %v\n", req)
 	for i := 0; i < 3; i++ {

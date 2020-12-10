@@ -39,10 +39,10 @@ func main() {
 	c := greetpb.NewGreetServiceClient(cc)
 	// fmt.Printf("Created client: %f", c)
 
-	doUnary(c)
-	doServerStreaming(c)
-	doClientStreaming(c)
-	// doBiDiStreaming(c)
+	//doUnary(c)
+	//doServerStreaming(c)
+	//doClientStreaming(c)
+	doBiDiStreaming(c)
 
 	// doUnaryWithDeadline(c, 5*time.Second) // should complete
 	// doUnaryWithDeadline(c, 1*time.Second) // should timeout
@@ -149,5 +149,86 @@ func doClientStreaming(c greetpb.GreetServiceClient) {
 	}
 
 	log.Info("LongGreet Response : " + res.Result)
+
+}
+
+func doBiDiStreaming(c greetpb.GreetServiceClient) {
+	log := loggerf.WithField("func", "doBiDiStreaming")
+	log.Info("Starting rpc call")
+
+	request := []*greetpb.GreetEveryoneRequest{
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Byron",
+				LastName:  "Bravo",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Natalia",
+				LastName:  "Espildora",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Lorna",
+				LastName:  "Bravo",
+			},
+		},
+		&greetpb.GreetEveryoneRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Ivar",
+				LastName:  "Bravo",
+			},
+		},
+	}
+	// we create a stream by invoking the client
+	stream, err := c.GreetEveryone(context.Background())
+	if err != nil {
+		log.Error("error while calling creating stream : " + err.Error())
+	}
+
+	waitc := make(chan struct{})
+	// we send a bunch of msg to the client (go routine)
+	go func() {
+		// function to send a bunch of messages
+		for _, req := range request {
+			log.Info("Sending message :" + req.Greeting.FirstName)
+			stream.Send(req)
+			time.Sleep(1000 * time.Millisecond)
+
+		}
+		stream.CloseSend()
+
+	}()
+
+	// we receive a bunch of msg from the client (go routine)
+	go func() {
+
+		//LIKE A CHAT
+		for {
+
+			res, err := stream.Recv()
+			if err == io.EOF {
+				log.Error("error while receiving GreetEveryone : " + err.Error())
+				//ENABLE THIS TO RECEIVE FIRST ITEM
+				//close(waitc)
+				break
+			}
+
+			if err != nil {
+				log.Error("error whilecalling GreetEveryone RPC: " + err.Error())
+				//
+				break
+			}
+
+			log.Info("GreetEveryone Response : " + res.Result)
+		}
+		//ENABLE THIS TO RECEIVE ALL RESPONSES
+		close(waitc)
+	}()
+
+	// block until everything is done
+	<-waitc
 
 }
