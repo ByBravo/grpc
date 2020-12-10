@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"time"
 
 	greetpb "github.com/ByBravo/grpc/grpc-course-udey/greet/greetpb"
 	"github.com/ByBravo/grpc/grpc-course-udey/greet/log"
@@ -40,7 +41,7 @@ func main() {
 
 	doUnary(c)
 	doServerStreaming(c)
-	// doClientStreaming(c)
+	doClientStreaming(c)
 	// doBiDiStreaming(c)
 
 	// doUnaryWithDeadline(c, 5*time.Second) // should complete
@@ -85,7 +86,6 @@ func doServerStreaming(c greetpb.GreetServiceClient) {
 		msg, err := resStream.Recv()
 		if err == io.EOF {
 			log.Error("error whilecalling GreetMenyTimes : " + err.Error())
-
 			break
 		}
 
@@ -96,5 +96,58 @@ func doServerStreaming(c greetpb.GreetServiceClient) {
 		log.Info("Response from GreetMenyTimes " + msg.GetResult())
 
 	}
+
+}
+
+func doClientStreaming(c greetpb.GreetServiceClient) {
+	log := loggerf.WithField("func", "doClientStreaming")
+	log.Info("Starting rpc call")
+	request := []*greetpb.LongGreetRequest{
+		&greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Byron",
+				LastName:  "Bravo",
+			},
+		},
+		&greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Natalia",
+				LastName:  "Espildora",
+			},
+		},
+		&greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Lorna",
+				LastName:  "Bravo",
+			},
+		},
+		&greetpb.LongGreetRequest{
+			Greeting: &greetpb.Greeting{
+				FirstName: "Ivar",
+				LastName:  "Bravo",
+			},
+		},
+	}
+
+	stream, err := c.LongGreet(context.Background())
+	if err != nil {
+		log.Error("error while calling LongGreet RPC: " + err.Error())
+	}
+
+	for _, req := range request {
+		log.Info("Sending req :" + req.Greeting.FirstName)
+		stream.Send(req)
+
+		time.Sleep(100 * time.Millisecond)
+
+	}
+
+	res, err := stream.CloseAndRecv()
+
+	if nil != err {
+		log.Error("error while receiving response from LongGreet : " + err.Error())
+	}
+
+	log.Info("LongGreet Response : " + res.Result)
 
 }

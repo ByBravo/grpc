@@ -50,6 +50,8 @@ func (*server) GreetManyTimes(req *greetpb.GreetManyTimesRequest, stream greetpb
 		res := &greetpb.GreetManytimesResponse{
 			Result: result,
 		}
+		//PAY attention here
+		log.Info("stream.Send")
 		stream.Send(res)
 		time.Sleep(1000 * time.Millisecond)
 	}
