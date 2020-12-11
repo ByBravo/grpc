@@ -2,13 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
 	greetpb "github.com/ByBravo/grpc/grpc-course-udey/greet/greetpb"
 	"github.com/ByBravo/grpc/grpc-course-udey/greet/log"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
+	//"google.golang.org/grpc/reflection"
 )
 
 var loggerf = log.LoggerJSON().WithField("package", "client")
@@ -40,12 +44,13 @@ func main() {
 	// fmt.Printf("Created client: %f", c)
 
 	//doUnary(c)
+	doUnaryWithError(c)
 	//doServerStreaming(c)
 	//doClientStreaming(c)
-	doBiDiStreaming(c)
+	//doBiDiStreaming(c)
 
-	// doUnaryWithDeadline(c, 5*time.Second) // should complete
-	// doUnaryWithDeadline(c, 1*time.Second) // should timeout
+	//doUnaryWithDeadline(c, 5*time.Second) // should complete
+	//doUnaryWithDeadline(c, 1*time.Second) // should timeout
 }
 
 func doUnary(c greetpb.GreetServiceClient) {
@@ -231,4 +236,72 @@ func doBiDiStreaming(c greetpb.GreetServiceClient) {
 	// block until everything is done
 	<-waitc
 
+}
+
+func doUnaryWithDeadline(c greetpb.GreetServiceClient, timeout time.Duration) {
+	log := loggerf.WithField("func", "doUnaryWithDeadline")
+	log.Info("Starting to do a UnaryWithDeadline RPC...")
+	req := &greetpb.GreetWithDeadlineRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "Stephane",
+			LastName:  "Maarek",
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	res, err := c.GreetWithDeadline(ctx, req)
+	if err != nil {
+
+		statusErr, ok := status.FromError(err)
+		if ok {
+			if statusErr.Code() == codes.DeadlineExceeded {
+				log.Error("Timeout was hit! Deadline was exceeded")
+			} else {
+				fmt.Println("unexpected error: %v", statusErr)
+			}
+		} else {
+			log.Error("error while calling GreetWithDeadline RPC: " + err.Error())
+		}
+		return
+	}
+	log.Info("Response from GreetWithDeadline: " + res.Result)
+}
+
+func doUnaryWithError(c greetpb.GreetServiceClient) {
+	log := loggerf.WithField("func", "doUnaryWithError")
+	log.Info("Starting to doUnaryWithError RPC...")
+	req := &greetpb.GreetRequest{
+		Greeting: &greetpb.Greeting{
+			FirstName: "",
+			LastName:  "Bravo",
+		},
+	}
+	// bad call
+	doErrorCall(c, req)
+}
+
+func doErrorCall(c greetpb.GreetServiceClient, req *greetpb.GreetRequest) {
+
+	log := loggerf.WithField("func", "doErrorCall")
+	log.Info("Starting to RPC call ...")
+
+	res, err := c.Greet(context.Background(), req)
+
+	if err != nil {
+		respErr, ok := status.FromError(err)
+		if ok {
+			// actual error from gRPC (user error)
+			log.Error("Error message from server: " + respErr.Message())
+			log.Error(respErr.Code().String())
+			if respErr.Code() == codes.InvalidArgument {
+				log.Error("We probably sent a empty firstname!")
+				return
+			}
+		} else {
+			log.Error("Big Error calling Greet: " + err.Error())
+			return
+		}
+	}
+	log.Info("Result of Greet :" + res.GetResult())
 }

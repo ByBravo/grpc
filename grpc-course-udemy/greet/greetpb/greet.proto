@@ -50,7 +50,9 @@ message GreetWithDeadlineResponse {
 
 service GreetService{
     // Unary
-    rpc Greet(GreetRequest) returns (GreetResponse) {};
+    // this RPC will throw an exception if the sent string is empty 
+    // The error being sent is of type INVALID_ARGUMENT
+    rpc Greet(GreetRequest) returns (GreetRequest) {};
 
     // Server Streaming
     rpc GreetManyTimes(GreetManyTimesRequest) returns (stream GreetManytimesResponse) {};
@@ -63,5 +65,7 @@ service GreetService{
 
     // Unary With Deadline
     rpc GreetWithDeadline(GreetWithDeadlineRequest) returns (GreetWithDeadlineResponse) {};
+
+  
 
 }

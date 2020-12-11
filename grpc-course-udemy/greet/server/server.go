@@ -25,8 +25,15 @@ type server struct{}
 func (*server) Greet(ctx context.Context, req *greetpb.GreetRequest) (*greetpb.GreetResponse, error) {
 
 	log := loggerf.WithField("func", "Greet")
-	log.Info("Iniciando")
+	log.Info("Starting")
 	firstName := req.GetGreeting().GetFirstName()
+
+	if firstName == "" {
+		return nil, status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Received a empty firstname "),
+		)
+	}
 
 	result := "Hello " + firstName
 
