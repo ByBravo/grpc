@@ -18,7 +18,9 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type GreetServiceClient interface {
 	// Unary
-	Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error)
+	// this RPC will throw an exception if the sent string is empty
+	// The error being sent is of type INVALID_ARGUMENT
+	Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetRequest, error)
 	// Server Streaming
 	GreetManyTimes(ctx context.Context, in *GreetManyTimesRequest, opts ...grpc.CallOption) (GreetService_GreetManyTimesClient, error)
 	// Client Streaming
@@ -37,8 +39,8 @@ func NewGreetServiceClient(cc grpc.ClientConnInterface) GreetServiceClient {
 	return &greetServiceClient{cc}
 }
 
-func (c *greetServiceClient) Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetResponse, error) {
-	out := new(GreetResponse)
+func (c *greetServiceClient) Greet(ctx context.Context, in *GreetRequest, opts ...grpc.CallOption) (*GreetRequest, error) {
+	out := new(GreetRequest)
 	err := c.cc.Invoke(ctx, "/greet.GreetService/Greet", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -157,7 +159,9 @@ func (c *greetServiceClient) GreetWithDeadline(ctx context.Context, in *GreetWit
 // for forward compatibility
 type GreetServiceServer interface {
 	// Unary
-	Greet(context.Context, *GreetRequest) (*GreetResponse, error)
+	// this RPC will throw an exception if the sent string is empty
+	// The error being sent is of type INVALID_ARGUMENT
+	Greet(context.Context, *GreetRequest) (*GreetRequest, error)
 	// Server Streaming
 	GreetManyTimes(*GreetManyTimesRequest, GreetService_GreetManyTimesServer) error
 	// Client Streaming
@@ -166,13 +170,14 @@ type GreetServiceServer interface {
 	GreetEveryone(GreetService_GreetEveryoneServer) error
 	// Unary With Deadline
 	GreetWithDeadline(context.Context, *GreetWithDeadlineRequest) (*GreetWithDeadlineResponse, error)
+	mustEmbedUnimplementedGreetServiceServer()
 }
 
 // UnimplementedGreetServiceServer must be embedded to have forward compatible implementations.
 type UnimplementedGreetServiceServer struct {
 }
 
-func (UnimplementedGreetServiceServer) Greet(context.Context, *GreetRequest) (*GreetResponse, error) {
+func (UnimplementedGreetServiceServer) Greet(context.Context, *GreetRequest) (*GreetRequest, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Greet not implemented")
 }
 func (UnimplementedGreetServiceServer) GreetManyTimes(*GreetManyTimesRequest, GreetService_GreetManyTimesServer) error {
@@ -186,6 +191,14 @@ func (UnimplementedGreetServiceServer) GreetEveryone(GreetService_GreetEveryoneS
 }
 func (UnimplementedGreetServiceServer) GreetWithDeadline(context.Context, *GreetWithDeadlineRequest) (*GreetWithDeadlineResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GreetWithDeadline not implemented")
+}
+func (UnimplementedGreetServiceServer) mustEmbedUnimplementedGreetServiceServer() {}
+
+// UnsafeGreetServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GreetServiceServer will
+// result in compilation errors.
+type UnsafeGreetServiceServer interface {
+	mustEmbedUnimplementedGreetServiceServer()
 }
 
 func RegisterGreetServiceServer(s grpc.ServiceRegistrar, srv GreetServiceServer) {
