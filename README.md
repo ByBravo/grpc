@@ -13,9 +13,11 @@
     * Client Streaming 
 
     * Bi Directional Streaming 
+    
+    * Concurrency
 
 ## More things
 
     Also I will add some libraries of my liking such as the following:
- 
+
     * apex => log
